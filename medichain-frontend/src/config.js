@@ -1,17 +1,30 @@
-const env = process.env.NODE_ENV || 'development';
+/**
+ * API Configuration for MediChain Frontend
+ */
 
-const config = {
-  development: {
-    apiUrl: 'http://localhost:5000/api'
-  },
-  production: {
-    // For GitHub Pages connecting to your Raspberry Pi via ngrok
-    // This will be updated dynamically in your ngrok setup script
-    apiUrl: window.API_URL || 'http://localhost:5000/api'
-  },
-  test: {
-    apiUrl: 'http://localhost:5000/api'
+// Default API URL when running locally
+const localApiUrl = 'http://localhost:5000/api';
+
+// Check if window.API_URL is defined (by ngrok script)
+const getApiUrl = () => {
+  if (typeof window !== 'undefined' && window.API_URL) {
+    console.log('Using dynamic API URL from config:', window.API_URL);
+    return window.API_URL;
   }
+  
+  // Otherwise, try environment variables (for development/production builds)
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Fallback to local API URL
+  console.log('No API URL configured, using default:', localApiUrl);
+  return localApiUrl;
 };
 
-export default config[env];
+const config = {
+  apiUrl: getApiUrl(),
+  version: '1.0.0',
+};
+
+export default config;
