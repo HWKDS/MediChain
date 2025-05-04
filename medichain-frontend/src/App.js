@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import './App.css';
 import QRCodeScanner from './components/QRCodeScanner';
 import config from './config';
@@ -9,48 +9,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [error, setError] = useState(null);
-  const [apiStatus, setApiStatus] = useState({ isChecking: true, isAvailable: false, url: '' });
   
   // Use ref to track if verification is in progress
   const verificationInProgress = useRef(false);
-
-  // Check API availability when component mounts
-  useEffect(() => {
-    const checkApiStatus = async () => {
-      setApiStatus(prev => ({ ...prev, isChecking: true }));
-      try {
-        // Try to get the dynamic API URL from window.API_URL (set by ngrok script)
-        const apiUrl = window.API_URL || config.apiUrl;
-        console.log(`Checking API availability at: ${apiUrl}`);
-        
-        const response = await fetch(`${apiUrl}/test`, { 
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          // Set a short timeout to avoid long waiting when API is unavailable
-          signal: AbortSignal.timeout(5000)
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('API is available:', data);
-          setApiStatus({ 
-            isChecking: false, 
-            isAvailable: true, 
-            url: apiUrl,
-            contractAddress: data.contractAddress
-          });
-        } else {
-          setApiStatus({ isChecking: false, isAvailable: false, url: apiUrl });
-          console.error('API returned an error:', await response.text());
-        }
-      } catch (err) {
-        console.error('Error checking API:', err);
-        setApiStatus({ isChecking: false, isAvailable: false, url: window.API_URL || config.apiUrl });
-      }
-    };
-
-    checkApiStatus();
-  }, []);
 
   const handleQrCodeSubmit = async (e) => {
     e.preventDefault();
@@ -76,9 +37,7 @@ function App() {
     
     try {
       console.log(`Verifying QR code: ${code}`);
-      console.log(`Using API URL: ${apiStatus.url}`);
-      
-      const response = await fetch(`${apiStatus.url}/verify`, {
+      const response = await fetch(`${config.apiUrl}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,19 +57,7 @@ function App() {
       setVerificationResult(result);
     } catch (err) {
       console.error('Verification error:', err);
-      
-      // More specific error messages based on error type
-      if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
-        setError(
-          'Unable to connect to the verification server. ' +
-          'Please check your internet connection and ensure the API server is running. ' +
-          'API URL: ' + apiStatus.url
-        );
-      } else if (err.name === 'AbortError') {
-        setError('Verification request timed out. The server might be overloaded or unavailable.');
-      } else {
-        setError(err.message || 'Failed to verify the medicine. Please try again.');
-      }
+      setError(err.message || 'Failed to verify the medicine. Please try again.');
     } finally {
       setIsLoading(false);
       // Reset the verification in progress flag after a short delay
@@ -134,110 +81,81 @@ function App() {
       </header>
       
       <main className="App-main">
-        {apiStatus.isChecking ? (
-          <div className="loading-container">
-            <p>Connecting to blockchain service...</p>
-          </div>
-        ) : !apiStatus.isAvailable ? (
-          <div className="error-message">
-            <h3>Connection Error</h3>
-            <p>Cannot connect to the blockchain service at {apiStatus.url}</p>
-            <p>Please ensure the backend server is running and accessible.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="secondary-button"
-            >
-              Retry Connection
-            </button>
-          </div>
-        ) : (
-          <>
-            <section className="verification-section">
-              <h3>Verify Your Medicine</h3>
-              
-              {!showScanner ? (
-                <>
-                  <form onSubmit={handleQrCodeSubmit}>
-                    <div className="form-group">
-                      <label htmlFor="qrCode">Enter QR Code:</label>
-                      <input 
-                        type="text" 
-                        id="qrCode"
-                        value={qrCode}
-                        onChange={(e) => setQrCode(e.target.value)}
-                        placeholder="Enter the unique QR code"
-                      />
-                    </div>
-                    <div className="button-group">
-                      <button type="submit" disabled={isLoading || !qrCode}>
-                        {isLoading ? 'Verifying...' : 'Verify Medicine'}
-                      </button>
-                      <button 
-                        type="button" 
-                        className="secondary-button"
-                        onClick={handleShowScanner}
-                      >
-                        Scan QR Code
-                      </button>
-                    </div>
-                  </form>
-                </>
-              ) : (
-                <div className="scanner-container">
-                  <QRCodeScanner onScanSuccess={handleScanSuccess} />
+        <section className="verification-section">
+          <h3>Verify Your Medicine</h3>
+          
+          {!showScanner ? (
+            <>
+              <form onSubmit={handleQrCodeSubmit}>
+                <div className="form-group">
+                  <label htmlFor="qrCode">Enter QR Code:</label>
+                  <input 
+                    type="text" 
+                    id="qrCode"
+                    value={qrCode}
+                    onChange={(e) => setQrCode(e.target.value)}
+                    placeholder="Enter the unique QR code"
+                  />
+                </div>
+                <div className="button-group">
+                  <button type="submit" disabled={isLoading || !qrCode}>
+                    {isLoading ? 'Verifying...' : 'Verify Medicine'}
+                  </button>
                   <button 
-                    className="secondary-button" 
-                    onClick={() => setShowScanner(false)}
+                    type="button" 
+                    className="secondary-button"
+                    onClick={handleShowScanner}
                   >
-                    Cancel Scan
+                    Scan QR Code
                   </button>
                 </div>
-              )}
+              </form>
+            </>
+          ) : (
+            <div className="scanner-container">
+              <QRCodeScanner onScanSuccess={handleScanSuccess} />
+              <button 
+                className="secondary-button" 
+                onClick={() => setShowScanner(false)}
+              >
+                Cancel Scan
+              </button>
+            </div>
+          )}
+          
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+            </div>
+          )}
+        </section>
+        
+        {verificationResult && (
+          <section className="result-section">
+            <div className={`result-box ${verificationResult.isAuthentic && !verificationResult.isSuspicious ? 'authentic' : 'suspicious'}`}>
+              <h3>
+                {verificationResult.isAuthentic && !verificationResult.isSuspicious 
+                  ? 'Medicine Verified ✓' 
+                  : 'Suspicious Medicine ⚠'}
+              </h3>
               
-              {error && (
-                <div className="error-message">
-                  <p>{error}</p>
+              {verificationResult.isAuthentic && !verificationResult.isSuspicious ? (
+                <div className="drug-details">
+                  <h4>Drug Details:</h4>
+                  <p><strong>Name:</strong> {verificationResult.drugDetails.name}</p>
+                  <p><strong>Manufacturer:</strong> {verificationResult.drugDetails.manufacturer}</p>
+                  <p><strong>Batch Number:</strong> {verificationResult.drugDetails.batchNumber}</p>
+                  <p><strong>Expiry Date:</strong> {new Date(verificationResult.drugDetails.expiryDate).toLocaleDateString()}</p>
+                  <p><strong>Ingredients:</strong> {verificationResult.drugDetails.ingredients}</p>
+                </div>
+              ) : (
+                <div className="alert-message">
+                  <p>This QR code has been scanned {verificationResult.scanCount} times, which may indicate a counterfeit product.</p>
+                  <p>Please consult with your pharmacy or healthcare provider.</p>
                 </div>
               )}
-            </section>
-            
-            {verificationResult && (
-              <section className="result-section">
-                <div className={`result-box ${verificationResult.isAuthentic && !verificationResult.isSuspicious ? 'authentic' : 'suspicious'}`}>
-                  <h3>
-                    {verificationResult.isAuthentic && !verificationResult.isSuspicious 
-                      ? 'Medicine Verified ✓' 
-                      : 'Suspicious Medicine ⚠'}
-                  </h3>
-                  
-                  {verificationResult.isAuthentic && !verificationResult.isSuspicious ? (
-                    <div className="drug-details">
-                      <h4>Drug Details:</h4>
-                      <p><strong>Name:</strong> {verificationResult.drugDetails.name}</p>
-                      <p><strong>Manufacturer:</strong> {verificationResult.drugDetails.manufacturer}</p>
-                      <p><strong>Batch Number:</strong> {verificationResult.drugDetails.batchNumber}</p>
-                      <p><strong>Expiry Date:</strong> {new Date(verificationResult.drugDetails.expiryDate).toLocaleDateString()}</p>
-                      <p><strong>Ingredients:</strong> {verificationResult.drugDetails.ingredients}</p>
-                    </div>
-                  ) : (
-                    <div className="alert-message">
-                      <p>This QR code has been scanned {verificationResult.scanCount} times, which may indicate a counterfeit product.</p>
-                      <p>Please consult with your pharmacy or healthcare provider.</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-            
-            <section className="api-info">
-              <p className="api-status">
-                <small>
-                  Connected to blockchain service at{' '}
-                  <span className="api-url">{apiStatus.url}</span>
-                </small>
-              </p>
-            </section>
-          </>
+            </div>
+          </section>
         )}
         
         <section className="how-it-works">
