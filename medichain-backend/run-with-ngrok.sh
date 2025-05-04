@@ -76,13 +76,24 @@ cd /home/kds/Github/MediChain/medichain-backend
 node server.js &
 SERVER_PID=$!
 
-# Wait for server to start
-sleep 3
+# Wait for server to start and detect which port was actually used
+sleep 5
 echo "Backend server started with PID: $SERVER_PID"
 
-# Start ngrok to expose the backend
-echo "Starting ngrok tunnel..."
-ngrok http 5000 > /dev/null &
+# Check if the server has written a port file
+PORT_FILE="/home/kds/Github/MediChain/medichain-backend/current_port.txt"
+API_PORT=5000
+
+if [ -f "$PORT_FILE" ]; then
+  API_PORT=$(cat "$PORT_FILE")
+  echo "Detected backend running on port: $API_PORT"
+else
+  echo "Using default port: $API_PORT"
+fi
+
+# Start ngrok to expose the backend on the correct port
+echo "Starting ngrok tunnel for port $API_PORT..."
+ngrok http $API_PORT > /dev/null &
 NGROK_PID=$!
 
 # Wait for ngrok to start

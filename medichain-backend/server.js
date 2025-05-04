@@ -290,14 +290,97 @@ app.get('/api/drug/:qrCode', async (req, res) => {
   }
 });
 
-// Start server
+// Require needed modules for port handling
+const path = require('path');
+const fs = require('fs');
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('Shutting down server...');
+  process.exit(0);
+});
+
+// Start server with port fallback
 async function startServer() {
   await initWeb3();
   
-  app.listen(port, () => {
-    console.log(`MediChain API server running on port ${port}`);
-    console.log(`Test API at: http://localhost:${port}/api/test`);
-  });
+  // Try the main port first
+  let mainPort = port;
+  const alternativePorts = [5001, 5002, 5003, 8080];
+  
+  // Function to try starting the server on a specific port
+  const tryPort = (portToTry) => {
+    return new Promise((resolve) => {
+      const server = app.listen(portToTry, () => {
+        console.log(`MediChain API server running on port ${portToTry}`);
+        console.log(`Test API at: http://localhost:${portToTry}/api/test`);
+        resolve({ success: true, port: portToTry, server });
+      });
+      
+      server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.log(`Port ${portToTry} is already in use, trying another port...`);
+          server.close();
+          resolve({ success: false });
+        } else {
+          console.error('Server error:', err);
+          resolve({ success: false });
+        }
+      });
+    });
+  };
+  
+  // Try the main port first
+  let result = await tryPort(mainPort);
+  
+  // If main port failed, try alternatives
+  if (!result.success) {
+    // Find the process using the port (Linux only)
+    try {
+      const { execSync } = require('child_process');
+      const output = execSync(`lsof -i :${mainPort} -t`).toString().trim();
+      if (output) {
+        console.log(`Port ${mainPort} is used by process ID(s): ${output}`);
+      }
+    } catch (e) {
+      // Ignore if lsof is not available
+    }
+    
+    // Try alternative ports
+    for (const altPort of alternativePorts) {
+      console.log(`Trying alternative port ${altPort}...`);
+      result = await tryPort(altPort);
+      if (result.success) {
+        // Update the port for ngrok in config.js if it exists
+        try {
+          const configPath = path.join(__dirname, '../medichain-frontend/public/config.js');
+          if (fs.existsSync(configPath)) {
+            let configContent = fs.readFileSync(configPath, 'utf8');
+            configContent = configContent.replace(/API_URL = ".*\/api"/, `API_URL = "http://localhost:${altPort}/api"`);
+            fs.writeFileSync(configPath, configContent);
+            console.log(`Updated config.js with new port: ${altPort}`);
+          }
+        } catch (err) {
+          console.log('Could not update config.js:', err.message);
+        }
+        break;
+      }
+    }
+    
+    if (!result.success) {
+      console.error('Could not start server on any port. Please check for running processes.');
+      process.exit(1);
+    }
+  }
+  
+  // Save the actual port to a file for reference
+  try {
+    fs.writeFileSync(path.join(__dirname, 'current_port.txt'), result.port.toString());
+    console.log(`Port information saved to current_port.txt`);
+  } catch (err) {
+    console.log('Could not save port information:', err.message);
+  }
 }
 
+// Start the server
 startServer();
