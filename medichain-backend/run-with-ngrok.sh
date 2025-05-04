@@ -91,9 +91,9 @@ else
   echo "Using default port: $API_PORT"
 fi
 
-# Start ngrok to expose the backend on the correct port
+# Start ngrok to expose the backend on the correct port with enhanced settings
 echo "Starting ngrok tunnel for port $API_PORT..."
-ngrok http $API_PORT > /dev/null &
+ngrok http $API_PORT --log=stdout > /dev/null &
 NGROK_PID=$!
 
 # Wait for ngrok to start
