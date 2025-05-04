@@ -8,8 +8,16 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Enhanced CORS configuration for GitHub Pages
+app.use(cors({
+  // Allow requests from any origin when developing
+  // In production, you might want to restrict this to your GitHub Pages domain
+  origin: '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Middleware
-app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

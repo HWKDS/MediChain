@@ -5,8 +5,9 @@ const config = {
     apiUrl: 'http://localhost:5000/api'
   },
   production: {
-    // Change this to your production API URL when you deploy the backend
-    apiUrl: process.env.REACT_APP_API_URL || 'https://your-backend-url.vercel.app/api'
+    // For GitHub Pages connecting to your Raspberry Pi via ngrok
+    // This will be updated dynamically in your ngrok setup script
+    apiUrl: window.API_URL || 'http://localhost:5000/api'
   },
   test: {
     apiUrl: 'http://localhost:5000/api'
