@@ -2,4 +2,3 @@
 // Default fallback configuration
 window.API_URL = "https://7220-146-196-32-136.ngrok-free.app/api";
 console.log("API URL set to: " + window.API_URL);
-
