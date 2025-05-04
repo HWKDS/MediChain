@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './App.css';
 import QRCodeScanner from './components/QRCodeScanner';
+import config from './config';
 
 function App() {
   const [qrCode, setQrCode] = useState('');
@@ -36,7 +37,7 @@ function App() {
     
     try {
       console.log(`Verifying QR code: ${code}`);
-      const response = await fetch('http://localhost:5000/api/verify', {
+      const response = await fetch(`${config.apiUrl}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
