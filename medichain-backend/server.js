@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Web3 configuration - using local blockchain
-const web3 = new Web3('http://localhost:8545'); // Local Ganache
+const web3 = new Web3('http://127.0.0.1:8545'); // Local Ganache using IPv4 address
 const contractAddress = process.env.CONTRACT_ADDRESS;
 
 // Check if contract address is available

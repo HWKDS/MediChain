@@ -16,9 +16,18 @@ async function main() {
       process.exit(1);
     }
     
-    // Connect to local ganache
-    const web3 = new Web3('http://localhost:8545');
-    console.log('Connected to local Ganache instance at http://localhost:8545');
+    // Connect to local ganache - use 127.0.0.1 instead of localhost to avoid IPv6 issues
+    const web3 = new Web3('http://127.0.0.1:8545');
+    console.log('Connected to local Ganache instance at http://127.0.0.1:8545');
+    
+    // Test connection
+    try {
+      await web3.eth.getBlockNumber();
+    } catch (connError) {
+      console.error('Failed to connect to Ganache:', connError.message);
+      console.error('Make sure Ganache is running on 127.0.0.1:8545');
+      process.exit(1);
+    }
     
     // Load contract JSON
     const contractJson = require(contractPath);
