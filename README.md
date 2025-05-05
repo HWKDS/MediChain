@@ -35,7 +35,13 @@ npm install
 # Install Ganache for local blockchain
 npm install -g ganache
 ```
-
+### .env configuration
+```
+THEREUM_NETWORK=local
+PORT=5000
+# Contract address (will be filled automatically by deploy_local.js)
+CONTRACT_ADDRESS=
+```
 ### Deploy to Local Blockchain
 
 1. Start a local blockchain using Ganache:
