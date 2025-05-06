@@ -46,7 +46,7 @@ const RegisterDrug = () => {
     }
     
     const jsonData = JSON.stringify(data, null, 2);
-    const command = `curl -X POST http://localhost:5000/api/register \\
+    const command = `curl -X POST https://0f03-146-196-32-136.ngrok-free.app/api/register \\
   -H "Content-Type: application/json" \\
   -d '${jsonData}'`;
     
@@ -74,7 +74,7 @@ const RegisterDrug = () => {
         requestData.expiryDate = requestData.expiryDate.toISOString();
       }
 
-      const response = await fetch('http://localhost:5000/api/register', {
+      const response = await fetch('https://0f03-146-196-32-136.ngrok-free.app/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
