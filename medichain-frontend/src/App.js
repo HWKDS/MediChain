@@ -2,11 +2,8 @@ import React, { useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import QRCodeScanner from './components/QRCodeScanner';
-<<<<<<< HEAD
 import config from './config';
-=======
 import RegisterDrug from './pages/RegisterDrug';
->>>>>>> 3fdeec3 (UI fixes)
 
 function Home() {
   const [qrCode, setQrCode] = useState('');
