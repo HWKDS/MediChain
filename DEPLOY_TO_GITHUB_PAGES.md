@@ -1,88 +1,94 @@
-# Deploying MediChain to GitHub Pages with Raspberry Pi Backend
+# MediChain deployment guide (hwkds.dev)
 
-This guide will help you deploy your MediChain frontend application to GitHub Pages while connecting to a backend running on your Raspberry Pi via ngrok.
+This project should use:
 
-## Setting up the Raspberry Pi Backend
+- Frontend: GitHub Pages at https://medichain.hwkds.dev
+- Backend: Render at https://api.hwkds.dev
 
-### Prerequisites
-1. Raspberry Pi with internet connection
-2. Node.js and npm installed on the Pi
-3. Ganache installed (`npm install -g ganache`)
-4. ngrok installed (follow instructions in run-with-ngrok.sh)
+## 1) Frontend setup (already prepared in code)
 
-### Steps to Run the Backend on Raspberry Pi
+Configured files:
 
-1. Copy the MediChain project to your Raspberry Pi
-2. Make the run script executable:
-   ```
-   chmod +x medichain-backend/run-with-ngrok.sh
-   ```
-3. Run the backend with ngrok:
-   ```
-   cd MediChain
-   ./medichain-backend/run-with-ngrok.sh
-   ```
-4. The script will output a ngrok URL. Make note of this URL.
-5. The script will automatically generate a `config.js` file with the ngrok URL.
+- [medichain-frontend/package.json](medichain-frontend/package.json) (`homepage` is `https://medichain.hwkds.dev`)
+- [medichain-frontend/public/CNAME](medichain-frontend/public/CNAME) (`medichain.hwkds.dev`)
+- [medichain-frontend/public/config.js](medichain-frontend/public/config.js) (`window.API_URL = "https://api.hwkds.dev/api"`)
 
-## Deploying the Frontend to GitHub Pages
+Deploy command:
 
-### Prerequisites
-1. GitHub account with the MediChain repository pushed to it
-2. Node.js and npm installed on your development machine
+1. Open terminal in `medichain-frontend`
+2. Run:
+   - `npm install`
+   - `npm run deploy`
 
-### Steps to Deploy
+This publishes to the `gh-pages` branch.
 
-1. Make sure you have the GitHub Pages package installed:
-   ```
-   cd medichain-frontend
-   npm install gh-pages --save-dev
-   ```
+## 2) GitHub Pages settings
 
-2. Update the `homepage` field in `package.json` with your GitHub username:
-   ```
-   "homepage": "https://yourusername.github.io/MediChain"
-   ```
+In GitHub repo settings:
 
-3. Copy the generated `config.js` from your Raspberry Pi to your development machine:
-   ```
-   # On your development machine:
-   cd medichain-frontend/public
-   # Replace with the actual config.js content from your Pi
-   ```
+1. Go to **Settings → Pages**
+2. Source: **Deploy from a branch**
+3. Branch: **gh-pages**
+4. Folder: **/ (root)**
+5. Custom domain: **medichain.hwkds.dev**
+6. Enable **Enforce HTTPS** (after DNS is valid)
 
-4. Deploy to GitHub Pages:
-   ```
-   cd medichain-frontend
-   npm run deploy
-   ```
+## 3) DNS for frontend (medichain.hwkds.dev)
 
-5. This will create a `gh-pages` branch in your repository and push the built frontend to it.
+At your DNS provider for `hwkds.dev`, add:
 
-6. Go to your GitHub repository settings, scroll down to the GitHub Pages section, and make sure it's set to deploy from the `gh-pages` branch.
+- Type: `CNAME`
+- Name/Host: `medichain`
+- Target/Value: `HWKDS.github.io`
 
-## Updating the Backend URL
+## 4) Deploy backend to Render
 
-When your ngrok URL changes (which happens each time you restart ngrok unless you have a paid account):
+Create a new **Web Service** on Render from this repo.
 
-1. Run the backend script again on your Raspberry Pi
-2. Copy the new `config.js` file to your development machine
-3. Commit and push the new `config.js` to your repository
-4. Redeploy to GitHub Pages:
-   ```
-   cd medichain-frontend
-   npm run deploy
-   ```
+Use these settings:
 
-## Troubleshooting
+- Root directory: project root (`MediChain`)
+- Build command: `npm install`
+- Start command: `node medichain-backend/server.js`
 
-1. **CORS Issues**: If you encounter CORS issues, update your backend server.js to allow requests from your GitHub Pages domain:
-   ```javascript
-   app.use(cors({
-     origin: 'https://yourusername.github.io'
-   }));
-   ```
+Set environment variables in Render:
 
-2. **Mixed Content Warnings**: If your GitHub Pages site (https) is trying to load the API from an ngrok http URL, make sure to use an ngrok URL that supports HTTPS.
+- `CONTRACT_ADDRESS` = deployed contract address
+- `RPC_URL` = public RPC endpoint URL
+- `PRIVATE_KEY` = wallet private key for transactions
+- `CORS_ORIGINS` = `https://medichain.hwkds.dev,https://hwkds.dev,https://www.hwkds.dev`
 
-3. **Connection Issues**: Ensure your Raspberry Pi is properly connected to the internet and the ngrok tunnel is active.
+Then deploy and copy the Render service URL (example: `https://medichain-api.onrender.com`).
+
+## 5) DNS for backend (api.hwkds.dev)
+
+In Render service settings, add custom domain: `api.hwkds.dev`.
+
+Render will show a DNS target. Add it in DNS:
+
+- Type: `CNAME`
+- Name/Host: `api`
+- Target/Value: `<value provided by Render>`
+
+Wait for Render domain verification.
+
+## 6) Update flow after code changes
+
+Frontend update:
+
+1. Push frontend code
+2. Run `npm run deploy` inside `medichain-frontend`
+3. Wait 1–5 minutes for Pages cache/deploy
+
+Backend update:
+
+1. Push backend code to connected branch
+2. Render auto-deploys
+3. Verify `https://api.hwkds.dev/api/test`
+
+## 7) Quick validation checklist
+
+- App opens: `https://medichain.hwkds.dev`
+- API test works: `https://api.hwkds.dev/api/test`
+- Browser console shows API URL from [medichain-frontend/public/config.js](medichain-frontend/public/config.js)
+- No CORS errors in browser network tab
